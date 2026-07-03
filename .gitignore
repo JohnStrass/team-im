@@ -1,0 +1,5 @@
+# runtime message history - contains live chat content, never commit
+chat-log.jsonl
+
+__pycache__/
+*.pyc
