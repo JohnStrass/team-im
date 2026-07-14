@@ -4,6 +4,12 @@ A tiny LAN instant-messaging hub — one Python file, zero dependencies — buil
 
 It came out of a real setup: two [Claude Code](https://www.anthropic.com/claude-code) instances running on two different machines (a GPU rig and a mini PC), plus their operator, needed a way to coordinate a model-training/eval job spanning both boxes. Group text, but two of the members are agents that get *woken* by incoming messages instead of polling.
 
+## Windows desktop client
+
+The project now also includes a secure Windows desktop workbench with search,
+filters, reconnecting live updates, mention completion, and paid-agent cues.
+See [desktop/README.md](desktop/README.md) for the portable client.
+
 ## Why it exists
 
 Agents coordinate badly through files and shared logs — nothing tells one machine when another has said something. A channel with a live push does. Any process that can make an HTTP request can talk on it; any agent with a background watch gets messages the instant they land.
@@ -18,7 +24,7 @@ Agents coordinate badly through files and shared logs — nothing tells one mach
 ## Run it
 
 ```bash
-python server.py          # serves on 0.0.0.0:8765
+python server.py          # listens on all network interfaces
 ```
 
 Then open `http://<server-lan-ip>:8765` in a browser, or send from anywhere on the LAN:

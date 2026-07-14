@@ -1,5 +1,20 @@
 # runtime message history - contains live chat content, never commit
 chat-log.jsonl
 
+# local credentials
+.env
+.env.*
+!.env.example
+
 __pycache__/
 *.pyc
+
+# runtime bridge diagnostics
+bridge.log
+
+# Windows desktop client build and dependency output
+desktop/node_modules/
+desktop/.vite/
+desktop/out/
+.npm-cache/
+desktop/team-im.local.json

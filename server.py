@@ -1,11 +1,11 @@
 #!/usr/bin/env python
-"""team-im server - a tiny LAN instant-messaging hub for Zach + the Claude instances.
+"""team-im server - a tiny LAN instant-messaging hub for people and coding agents.
 
 Pure Python stdlib, no dependencies. Run it and forget it.
 
 Endpoints:
   GET  /            the chat web page (for humans)
-  POST /send        {"from": "zach", "text": "hello"}  -> appends + broadcasts
+  POST /send        {"from": "operator", "text": "hello"}  -> appends + broadcasts
   GET  /messages    ?since_id=N  -> JSON list of messages after N (polling)
   GET  /stream      Server-Sent Events: pushes each new message as "data: {...}"
 
@@ -69,8 +69,10 @@ PAGE = """<!DOCTYPE html>
          padding: 10px; background: #171b21; }
   .m { margin: 6px 0; line-height: 1.35; }
   .who { font-weight: 700; margin-right: 6px; }
-  .zach { color: #ffd479; } .rig-claude { color: #7ee2a8; }
-  .littleguy-claude { color: #9ecbff; } .other { color: #d8a8ff; }
+  .operator { color: #ffd479; } .rig-claude { color: #7ee2a8; }
+  .littleguy-claude { color: #9ecbff; } .codex { color: #ff9d8a; }
+  .deepseek { color: #6fd8d8; } .kimi { color: #ffb3de; }
+  .other { color: #d8a8ff; }
   .ts { color: #667; font-size: 11px; margin-left: 8px; }
   #bar { display: flex; gap: 8px; margin-top: 10px; }
   input, button { font-size: 15px; border-radius: 8px; border: 1px solid #2a2f36; }
@@ -81,13 +83,13 @@ PAGE = """<!DOCTYPE html>
 <h2>team-im &mdash; the shop channel</h2>
 <div id="log"></div>
 <div id="bar">
-  <input id="name" value="zach">
+  <input id="name" value="operator">
   <input id="text" placeholder="message..." autofocus>
   <button onclick="send()">Send</button>
 </div>
 <script>
 const log = document.getElementById('log');
-function cls(w){ return ['zach','rig-claude','littleguy-claude'].includes(w) ? w : 'other'; }
+function cls(w){ return ['operator','rig-claude','littleguy-claude','codex','deepseek','kimi'].includes(w) ? w : 'other'; }
 function add(m){
   const d = document.createElement('div'); d.className = 'm';
   const t = new Date((m.ts||0)*1000).toLocaleTimeString();
@@ -103,7 +105,7 @@ function send(){
   const text = document.getElementById('text').value.trim();
   if(!text) return;
   fetch('/send', {method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({from: document.getElementById('name').value || 'zach', text})});
+    body: JSON.stringify({from: document.getElementById('name').value || 'operator', text})});
   document.getElementById('text').value = '';
 }
 document.getElementById('text').addEventListener('keydown', e => { if(e.key==='Enter') send(); });
@@ -191,5 +193,5 @@ class Handler(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     _load_history()
-    print(f"team-im serving on 0.0.0.0:{PORT}  ({len(_messages)} messages in history)")
-    ThreadingHTTPServer(("0.0.0.0", PORT), Handler).serve_forever()
+    print(f"team-im serving on all interfaces, port {PORT}  ({len(_messages)} messages in history)")
+    ThreadingHTTPServer(("", PORT), Handler).serve_forever()

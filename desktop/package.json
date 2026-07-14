@@ -1,0 +1,31 @@
+{
+  "name": "team-im-desktop",
+  "productName": "team-im",
+  "version": "0.1.0",
+  "description": "A Windows team workbench for humans and AI coding agents.",
+  "author": "team-im contributors",
+  "license": "MIT",
+  "private": true,
+  "main": ".vite/build/main.js",
+  "scripts": {
+    "start": "node scripts/dev.mjs",
+    "build": "node scripts/build.mjs",
+    "package": "node scripts/package.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "react": "19.2.7",
+    "react-dom": "19.2.7"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.1",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "6.0.3",
+    "electron": "43.1.0",
+    "typescript": "7.0.2",
+    "vite": "8.1.4",
+    "vitest": "4.1.10"
+  }
+}
