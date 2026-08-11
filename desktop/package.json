@@ -4,7 +4,7 @@
   "version": "0.2.0",
   "description": "A Windows team workbench for humans and AI coding agents.",
   "author": "team-im contributors",
-  "license": "MIT",
+  "license": "AGPL-3.0-only",
   "private": true,
   "main": ".vite/build/main.js",
   "scripts": {

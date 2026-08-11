@@ -102,4 +102,19 @@ Python 3.7+. Standard library only — nothing to install.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+Licensed under the **GNU Affero General Public License v3.0 only
+(AGPL-3.0-only)** — see [LICENSE](LICENSE).
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU Affero General Public License as published by the Free
+Software Foundation, version 3.
+
+It is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+
+This is a strong copyleft licence, and §13 is the one that matters for
+something like this: a chat hub is normally reached **over a network** rather
+than distributed as a file, and §13 means running a modified version as a
+network service also obliges you to offer its source. In short — if you build
+on this and let others talk to it, your version has to stay open too.
