@@ -36,7 +36,8 @@ if not DELEGATE_DIR:
     raise SystemExit("Set TEAM_IM_DELEGATE_DIR to the directory containing delegate.py")
 sys.path.insert(0, DELEGATE_DIR)
 try:
-    from delegate import WORKERS, call_anthropic, call_cloud, call_lmstudio  # noqa: E402
+    from delegate import (WORKERS, call_anthropic, call_cloud,  # noqa: E402
+                          call_hermes, call_lmstudio)
 except Exception:
     raise SystemExit("Unable to load the configured delegate module") from None
 
@@ -49,6 +50,27 @@ BOT_SPECS = {
     "atlas":    ("helper", call_lmstudio, {"max_tokens": 1100}),
     "scout":    ("scout",  call_lmstudio, {"max_tokens": 800}),
     "gemma-coder": ("gemma", call_lmstudio, {"max_tokens": 1100}),
+    # An agent, not a model: it runs a tool-using loop, so it is slower than the
+    # others and answers from research rather than weights alone.
+    #
+    # system_extra exists because the toolset restriction alone is not enough.
+    # Asked to write a file with the file tools withheld, it reported "Done -
+    # wrote to that path. The file_write tool is available and working." No file
+    # was created; the restriction held and the CLAIM did not. In a room where
+    # other agents act on what they read, a confident false report is the actual
+    # hazard, so it is told what it cannot do rather than left to discover it.
+    "hermes": ("hermes", call_hermes, {
+        "system_extra": (
+            "Your tools here are limited to web search, your own memory and "
+            "skills, and reading this conversation. You have NO filesystem, "
+            "shell, code-execution or computer access in this room. Never "
+            "claim to have created, edited, moved or run anything, and do not "
+            "describe yourself as able to read files, run commands or use "
+            "tools you were not given - others act on what you say. If "
+            "something needs doing, say what should be done and who should do "
+            "it."
+        ),
+    }),
 }
 ALL_BOT_HANDLES = frozenset(BOT_SPECS)
 
@@ -65,6 +87,16 @@ ALL_BOT_HANDLES = frozenset(BOT_SPECS)
 # expansion that included paid models would spend money with nothing shown to
 # the operator first.
 PAID_CALLERS = {call_cloud, call_anthropic}
+
+# Agent callers run a whole tool-using loop instead of one completion: tens of
+# seconds rather than a couple, and with a capability surface a chat model does
+# not have. A broadcast should not spawn one per message, so @everyone skips
+# them and they answer only to their own handle.
+#
+# Derived from the caller for the same reason PAID_CALLERS is: to be an agent a
+# bot has to be wired to an agent caller, so one added later cannot silently
+# miss the exclusion. A list of names would have to be remembered.
+AGENT_CALLERS = {call_hermes}
 EVERYONE = "everyone"
 EVERYONE_INCLUDES_PAID = os.environ.get(
     "TEAM_IM_EVERYONE_INCLUDES_PAID", ""
@@ -74,6 +106,11 @@ EVERYONE_INCLUDES_PAID = os.environ.get(
 def is_paid(handle):
     """True if waking this handle costs money."""
     return BOT_SPECS[handle][1] in PAID_CALLERS
+
+
+def is_agent(handle):
+    """True if this handle runs a tool-using agent loop rather than one call."""
+    return BOT_SPECS[handle][1] in AGENT_CALLERS
 BOTS = {}
 for handle in ENABLED:
     if handle not in BOT_SPECS:
@@ -154,11 +191,19 @@ def handle_mentions(msg, history):
         # model writing "@everyone" reaches nobody - which is the whole reason
         # that guard runs before this and not after.
         names.discard(EVERYONE)
-        reachable = {h for h in BOTS if EVERYONE_INCLUDES_PAID or not is_paid(h)}
-        skipped = sorted(h for h in BOTS if h not in reachable)
+        reachable = {
+            h for h in BOTS
+            if (EVERYONE_INCLUDES_PAID or not is_paid(h)) and not is_agent(h)
+        }
+        # Report the two exclusions separately: "not woken" for a paid model is
+        # about money, for an agent it is about cost in time and capability, and
+        # collapsing them would hide which rule fired.
+        skipped_paid = sorted(h for h in BOTS if h not in reachable and is_paid(h))
+        skipped_agent = sorted(h for h in BOTS if h not in reachable and is_agent(h))
         names |= reachable
         log(f"@everyone from {msg['from']} -> {sorted(reachable) or 'nobody'}"
-            + (f" (paid, not woken: {skipped})" if skipped else ""))
+            + (f" (paid, not woken: {skipped_paid})" if skipped_paid else "")
+            + (f" (agents, mention directly: {skipped_agent})" if skipped_agent else ""))
 
     for name in names:
         w, caller = BOTS[name]
@@ -167,10 +212,16 @@ def handle_mentions(msg, history):
             f'{item["from"]}: {item["text"]}' for item in history[-HISTORY_LINES:]
         )[-MAX_TRANSCRIPT_CHARS:]
         log(f"@{name} mentioned by {msg['from']} (msg {msg['id']}) - calling {w['model']}")
+        # Some workers need a line the others do not - see system_extra on the
+        # agent spec, where withholding the write tools is not enough on its own
+        # because the agent will still narrate having used them.
+        system = SYSTEM.format(name=name)
+        if w.get("system_extra"):
+            system = f"{system} {w['system_extra']}"
         try:
             reply, toks = caller(
                 w,
-                SYSTEM.format(name=name),
+                system,
                 f"Recent chat (latest mention is last):\n{transcript}",
                 temp=0.5,
             )

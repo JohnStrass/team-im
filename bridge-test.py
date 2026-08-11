@@ -59,6 +59,7 @@ WORKERS = {{
     "helper": {{"model": "stub-ok"}},
     "scout": {{"model": "{FAIL_MARKER}"}},
     "deepseek": {{"model": "stub-paid"}},
+    "hermes": {{"model": "stub-agent"}},
 }}
 
 
@@ -83,6 +84,16 @@ def call_cloud(worker, system, user, temp=0.5):
     # was woken and failed" - so the exclusion test could pass while the
     # exclusion was broken. Any message from this handle means it was woken.
     return ("stub PAID reply - this handle should not have been woken", 3)
+
+
+def call_hermes(worker, system, user, temp=0.5):
+    # Also SUCCEEDS on purpose, for the same reason as call_cloud: the agent is
+    # excluded from @everyone, and a raising stub would make "excluded" and
+    # "broken" look identical. It echoes the trigger like call_lmstudio so a
+    # direct mention can be matched to its own message.
+    lines = [line for line in user.splitlines() if line.strip()]
+    trigger = lines[-1].replace("@", "") if lines else "(empty transcript)"
+    return (f"stub AGENT reply | {{trigger}}", 3)
 '''
 
 
@@ -228,7 +239,7 @@ def main():
             env={
                 **os.environ,
                 "TEAM_IM_SERVER": BASE,
-                "TEAM_IM_ENABLED_BOTS": "atlas,scout,deepseek",
+                "TEAM_IM_ENABLED_BOTS": "atlas,scout,deepseek,hermes",
                 "TEAM_IM_DELEGATE_DIR": workdir,
             },
             stdout=subprocess.PIPE,
@@ -309,11 +320,34 @@ def main():
         check("@everyone does NOT wake a PAID model",
               len(collect("deepseek", fifth, 1, timeout=1)) == 0,
               "a paid handle replied to @everyone")
+        # An agent is free, so the paid rule alone would have woken it. It is
+        # excluded for cost in time and capability instead, and the stub
+        # succeeds, so a reply here means the exclusion is broken.
+        check("@everyone does NOT wake an AGENT",
+              len(collect("hermes", fifth, 1, timeout=1)) == 0,
+              "an agent handle replied to @everyone")
+
+        # 5b. ...but a DIRECT mention must still reach it. Without this, the
+        #     exclusion above passes just as well when the agent is completely
+        #     broken, which is the failure mode that already shipped once here.
+        fifth_b = mention("@hermes probe-iota", "reviews")
+        agent_replies = collect("hermes", fifth_b, 1)
+        check("a direct @hermes DOES wake the agent", len(agent_replies) == 1)
+        if agent_replies:
+            check("the agent answers in the channel it was asked in",
+                  agent_replies[0]["channel"] == "reviews",
+                  f'got #{agent_replies[0]["channel"]}')
 
         # 6. A model-authored @everyone must wake nobody. This is the loop guard
         #    and it is the difference between a feature and a bill.
         sixth = mention("@everyone probe-eta", "reviews")
         before = len(collect("atlas", sixth, 1))
+        # Drain scout's answer to that SAME @everyone before posting the next
+        # message. scout is the failing stub, so its error notice lands a moment
+        # after atlas's reply; waiting only for atlas leaves it in flight, where
+        # it can arrive after the bot-authored message below and be counted as a
+        # wake that never happened. Observed failing exactly that way once.
+        collect("scout", sixth, 1)
         _, body = post("/send", {"from": "atlas", "text": "@everyone probe-theta",
                                  "channel": "reviews"})
         time.sleep(3)

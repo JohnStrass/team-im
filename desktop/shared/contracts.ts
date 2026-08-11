@@ -62,7 +62,12 @@ export interface ServerControlInfo {
   canManage: boolean;
 }
 
-export type ParticipantKind = "session" | "cloud" | "local";
+/**
+ * "local" specifically means a model this app loads into LM Studio; it is the
+ * only kind that needs the lms CLI. "agent" is a tool-using agent process on
+ * this machine - free like a local model, but nothing here loads or unloads it.
+ */
+export type ParticipantKind = "session" | "cloud" | "local" | "agent";
 
 export type ParticipantStatus =
   | "external"

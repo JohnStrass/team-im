@@ -148,8 +148,13 @@ function participantActionLabel(participant: ParticipantState): string {
   if (participant.status === "disabling") return "Stopping...";
   if (participant.status === "unavailable") return "Setup";
   if (participant.status === "ready") {
-    if (participant.kind === "cloud") return "Disable";
-    return participant.resourceOwned ? "Unload" : "Disconnect";
+    // "Unload"/"Disconnect" is about releasing an LM Studio model. Test for the
+    // kind that actually holds one, so anything else reads as a plain Disable
+    // rather than offering to unload a model it never loaded.
+    if (participant.kind === "local") {
+      return participant.resourceOwned ? "Unload" : "Disconnect";
+    }
+    return "Disable";
   }
   if (participant.kind === "local") return participant.modelLoaded ? "Connect" : "Load";
   return participant.status === "error" ? "Retry" : "Enable";

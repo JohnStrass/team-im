@@ -820,6 +820,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, [role="option
 .member-action:hover { color: var(--text); }
 .member-action.action-local { color: #dfd3ff; border-color: rgba(190, 167, 245, 0.3); }
 .member-action.action-cloud { color: #efd397; border-color: rgba(241, 196, 109, 0.3); }
+.member-action.action-agent { color: #a9d4ff; border-color: rgba(126, 178, 240, 0.3); }
 .member-action:disabled { cursor: wait; opacity: 0.65; }
 
 .guardrail-card {

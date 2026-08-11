@@ -151,6 +151,20 @@ const DEFINITIONS: readonly ParticipantDefinition[] = Object.freeze([
     modelKey: "qwen2.5-coder:14b",
     modelIdentifier: "qwen2.5-coder:14b",
     backend: "ollama"
+  },
+  {
+    // An agent process, not a model this app hosts - so no modelIdentifier and
+    // no load/unload. It runs its own tool loop and answers from research, which
+    // makes it slower than the chat models and worth mentioning deliberately
+    // rather than sweeping into @everyone (the bridge enforces that exclusion).
+    handle: "hermes",
+    initials: "HM",
+    role: "Local research agent",
+    tone: "sky",
+    kind: "agent",
+    paid: false,
+    model: "Hermes Agent",
+    worker: "hermes"
   }
 ]);
 
@@ -196,9 +210,13 @@ export function baseParticipantState(
   const bridgeReady = Boolean(
     config.bridgeScript && config.delegateDir && config.python
   );
-  const controllable = definition.kind === "cloud"
-    ? bridgeReady
-    : bridgeReady && Boolean(config.lmsPath);
+  // Phrased as "local needs the lms CLI" rather than "cloud needs only the
+  // bridge". Same truth today, but a kind added later lands in the simpler,
+  // safer branch instead of silently demanding a CLI it never uses - which is
+  // exactly what the previous phrasing did to "agent".
+  const controllable = definition.kind === "local"
+    ? bridgeReady && Boolean(config.lmsPath)
+    : bridgeReady;
 
   if (!controllable) {
     return {
