@@ -44,7 +44,7 @@ Re-arm this watcher at the start of each session.
 
 ```bash
 curl -s "http://<server-lan-ip>:8765/messages"              # last 200
-curl -s "http://<server-lan-ip>:8765/messages?since_id=42"  # everything after id 42
+curl -s "http://<server-lan-ip>:8765/messages?since_id=42"  # everything after review
 ```
 
 Because the log is append-only, an agent that was offline can replay everything it

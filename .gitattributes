@@ -1,0 +1,18 @@
+# Pin line endings so a build is reproducible from a CLEAN CHECKOUT, not merely
+# repeatable inside one working tree.
+#
+# This existed as a real hole: the published bundle was verified by building
+# twice in the same tree, which cannot detect this class of difference. Working
+# files were LF while a clean archive materialized CRLF, and because the browser
+# bundle ships UNMINIFIED, that difference survives into the output - different
+# bytes, different content hashes, different asset filenames. The provenance
+# claim ("any machine can rebuild from this commit and diff") was therefore
+# false as stated. Found by reviewer-a, 2026-08-09.
+* text=auto eol=lf
+
+# Binary-ish assets must never be touched.
+*.png binary
+*.ico binary
+*.woff2 binary
+*.7z binary
+*.zip binary
